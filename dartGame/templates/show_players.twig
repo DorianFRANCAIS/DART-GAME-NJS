@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Liste des joueurs :</h1>
+        <ul>
+        {% for player in players %}
+            <li>ID :{{player.id}} <br> Nom : {{player.name}} <br> Email : {{player.email}}</li>
+        {% endfor %}
+        </ul>
+        <a href="/players/new">Créer un joueur</a>
+    </body>
+</html>

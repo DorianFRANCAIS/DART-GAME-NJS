@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Fiche d'une partie</h1>
+        <ul>
+        {% if game.status == "draft" %}
+        Status : Brouillon
+        <br>
+        <a href="players">Joueurs</a>
+        <br>
+        {% elseif game.status == "started" %}
+        Status : Commencée
+        {% else %}
+        Status : Finie
+        {% endif %}
+        </ul>
+        <h2>Joueurs :</h2>
+        {% if game.players %}
+        <ul>
+            {% for player in game.players %}
+                <li>{{player.name}}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    <a href="/games">Retour</a>
+
+    </body>
+</html>
