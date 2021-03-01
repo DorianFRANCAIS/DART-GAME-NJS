@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Joueurs disponibles :</h1>
+        <ul>
+        {% for player in availablesP %}
+        <li>{{player.name}} <form method="post" action="addPlayer/{{player.id}}"><button type="submit">Ajouter à la partie</button></form></li>
+        {% endfor %}
+        </ul>
+        <h1>Joueurs dans la partie :</h1>
+        <ul>
+        {% for player in alreadySelectedP %}
+        <li>{{player.name}}</li>
+        {% endfor %}
+        </ul>
+    <a href="/games">Retour</a>
+
+    </body>
+</html>

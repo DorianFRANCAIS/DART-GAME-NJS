@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <body>
+  {% if game and game.status == "draft" %}
+    <h1>Modifier une partie</h1>
+    <form method='post' action="/games/{{game.id}}">
+    <input type="hidden" name="_method" value="patch" />
+
+      <label for="name">Nom :</label>
+      <input placeholder="{{game.name}}" required name="name"/>
+      <br>
+      <label for="gameMode">Mode de jeu :</label>
+      <select placeholder="{{game.gameMode}}" required id="gameMode" name="gameMode">
+        <option value="AroundTheWorld">Tour du monde</option>
+      </select>  
+      <select placeholder="{{game.status}}" required id="status" name="status">
+        <option value="draft">Brouillon</option>
+        <option value="started">Demarée</option>
+      </select>  
+      <br>
+      <button type="submit">Modifier</button>
+      {% else %}
+      <h1>Créer une partie</h1>
+    <form method='post' action="/games">
+      <label  for="name">Nom :</label>
+      <input required name="name"/>
+      <br>
+      <label for="gameMode">Mode de jeu :</label>
+      <select required id="gameMode" name="gameMode">
+        <option value="AroundTheWolrd">Tour du monde</option>
+      </select>  
+      <br>
+      <button type="submit">Créer</button>
+      {% endif %}
+    </form>
+    <a href="/games">Retour</a>
+
+  </body>
+</html>

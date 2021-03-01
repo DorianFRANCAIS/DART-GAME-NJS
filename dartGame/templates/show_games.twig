@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <h1>Liste des parties :</h1>
+        <ul>
+        {% for game in games %}
+            <li>ID :{{game.id}} <br> Nom : {{game.name}} <br> Mode : {{game.gameMode}} <br> Status : {{game.status}} <br>
+        <a href="/games/{{game.id}}">Afficher</a>
+        <a href="/games/{{game.id}}/edit">Modifier</a>
+            </li>
+        {% endfor %}
+        </ul>
+        <a href="/games/new">Créer une partie</a>
+
+    </body>
+</html>
