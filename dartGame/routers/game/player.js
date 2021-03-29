@@ -33,7 +33,7 @@ router.route('/:id/edit')
       i++;
     }
     if (!trouve) {
-      res.status(404).send('Erreur 404 : Joueur non trouvée');
+      res.status(404).send('Erreur 404 : Joueur non trouvé');
     } else {
       res.render('create_player.twig', {
         'player': player

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
     <body>
-        <h1>Fiche d'une partie</h1>
+        <h1>Fiche d'une partie : {{game.name}}</h1>
         <ul>
         {% if game.status == "draft" %}
         Status : Brouillon
         <br>
-        <a href="players">Joueurs</a>
+        <a href="{{game.id}}/players">Joueurs</a>
         <br>
         {% elseif game.status == "started" %}
         Status : Commencée

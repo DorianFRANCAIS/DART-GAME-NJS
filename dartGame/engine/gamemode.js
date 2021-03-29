@@ -1,7 +1,6 @@
 class GameMode{
-    constructor(name, description) {
+    constructor(name) {
       this.name = name;
-      this.description = description;
     }
   
     set setName(newName){

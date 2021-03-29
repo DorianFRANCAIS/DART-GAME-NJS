@@ -11,6 +11,7 @@
         <ul>
         {% for player in alreadySelectedP %}
         <li>{{player.name}}</li>
+        <a href="{{player.id}}/edit">Modifier</a>
         {% endfor %}
         </ul>
     <a href="/games">Retour</a>
