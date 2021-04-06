@@ -1,6 +1,9 @@
 const router = require('express').Router()
-var id = 0;
+var gameId = 0;
+var gameShotId = 0;
+const { isRegExp } = require('node:util');
 var db = require('../app');
+const ArroundTheWorld = require('../engine/gamemodes/around_the_world');
 
 router.route('/')
   .get(function (req, res, next) {
@@ -12,20 +15,13 @@ router.route('/')
     var game = new Game(req.body.name, req.body.gameMode);
     db.db.games.push(game);
     res.redirect('/games');
-    res.end();
+    //res.end();
   });
 
 router.route('/new')
   .get(function (req, res, next) {
     res.render('create_game.twig', {
       'game': null
-    });
-  });
-router.route('/new.json')
-  .get(function (req, res, next) {
-    res.json({
-      status: 406,
-      message: 'NOT_API_AVAILABLE'
     });
   });
 
@@ -72,7 +68,40 @@ router.route('/:id')
     }
     res.redirect('/games');
 
-  });
+  })
+  .patch((function (req, res, next) {
+    let game = db.db.games[req.id];
+    //modifier des parametres uand on est en draft
+    //Passer une partie en started quand elle est draft
+    //terminer un e partie quan elle est strated
+    switch(game.status){
+      case 'started':
+        if(req.status == 'ended'){
+          game.status = req.status ;
+        }else{
+          //erreur
+        }
+      break;
+      case 'ended':
+        //rien de possible FIN DU GAME
+      break;
+      case 'draft':
+        if(req.status == null){
+          if(req.name != null){
+            game.name = req.name;
+          }
+          if(req.mode != null){
+            game.mode = req.mode;
+          }
+        }else if (req.status == 'started'){
+           game.status = req.status;
+           
+        }
+      break;
+    }
+    //Push de la game dans la base
+    res.redirect("/:"+game.id);
+  }));
 
 router.get('/:id/edit', function (req, res, next) {
   var i = 0;
@@ -142,42 +171,38 @@ router.route('/:id/addPlayer/:idPlayer')
     gPlayers.push(player);
     game.players = gPlayers;
     res.redirect("/games/" + game.id + "/players");
-  })
+  });
+
+  router.route('/:id/shots')
+  .post(function (req, res, next) {
+    //let game = db.db.games[req.id]
+    let gameShot = new GameShot(req.id,null,req.sector)
+
+    res.redirect("/games");
+  });
+
 class Game {
-  constructor(name, gameMode) {
-    this.id = id;
-    id++;
+  constructor(name, mode) {
+    this.id = gameId;
+    gameId++;
     this.name = name;
-    this.gameMode = gameMode;
+    this.mode = mode;
     this.status = 'draft';
-    this.players = [];
+    this.currentPlayerId = null;
     this.createdAt = Date.now();
-  }
-  get getId() {
-    return this.id;
-  }
-  set setGameMode(gamemode) {
-    this.gameMode = gamemode;
-  }
 
-  get getGameMode() {
-    return this.gameMode;
   }
-
-  set setPlayers(players) {
-    this.players = players;
-  }
-
-  get getPlayers() {
-    return this.players;
-  }
-
-  set setCurrentPlayerId(playerId) {
-    this.currentPlayerId = playerId;
-  }
-
-  get getCurrentPlayerId() {
-    return this.currentPlayerId;
-  }
+}
+  class GameShot {
+    constructor(gameId, playerId, sector) {
+      this.id = gameShotId;
+      gameShotId++;
+      this.gameId = gameId;
+      this.playerId = playerId;
+      this.sector = sector;
+      this.multiplicator = null;
+      this.createdAt = Date.now();
+      
+    }
 }
 module.exports.router = router;

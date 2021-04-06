@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const db = require('../../app');
-var id = 0;
+var idPlayer = 0;
+var idGamePlayer = 0;
+
 router.route('/')
   .get(function (req, res, next) {
     players = db.db.players;
@@ -68,43 +70,27 @@ router.route('/:id')
 class Player {
   constructor(name, email) {
     this.name = name;
-    this.id = id
-    id++;
+    this.id = idPlayer;
+    idPlayer++;
     this.email = email;
     this.gameWin = 0;
     this.gameLost = 0;
     this.createdAt = Date.now();
   }
+}
 
-  get getId() {
-    return this.id;
+class GamePlayer {
+  constructor(playerId,gameId) {
+    this.id = idGamePlayer
+    idGamePlayer++;
+    this.playerId = playerId;
+    this.gameId = gameId
+    this.remainingShots = null;
+    this.score = 0;
+    this.rank = null;
+    this.order = null;
+    this.inGame = true;
+    this.createdAt = Date.now();
   }
-  set setName(newName) {
-    this.name = newName;
-  }
-
-  get getName() {
-    return this.name;
-  }
-
-  get getEmail() {
-    return this.email;
-  }
-  set setGameWin(newGameWin) {
-    this.gameWin = newGameWin;
-  }
-
-  get getGameWin() {
-    return this.gameWin;
-  }
-
-  set setGameLost(newGameLost) {
-    this.gameLost = newGameLost;
-  }
-
-  get getGameLost() {
-    return this.gameLost;
-  }
-
 }
 module.exports.router = router;
