@@ -3,10 +3,11 @@
     <body>
         <h1>Fiche d'une partie : {{game.name}}</h1>
         <ul>
+        
         {% if game.status == "draft" %}
         Status : Brouillon
         <br>
-        <a href="{{game.id}}/players">Joueurs</a>
+        <a href="{{game._id}}/players">Joueurs</a>
         <br>
         {% elseif game.status == "started" %}
         Status : Commencée
@@ -22,7 +23,46 @@
             {% endfor %}
         </ul>
         {% endif %}
+{% if game.status == "draft" %}
+    <h1>Modifier une partie</h1>
+    <form method='post' action="/games/{{game._id}}">
+    <input type="hidden" name="_method" value="PATCH" />
+
+      <label for="name">Nom :</label>
+      <input placeholder="{{game.name}}" name="name"/>
+      <br>
+      <label for="gameMode">Mode de jeu :</label>
+      <select placeholder="{{game.mode}}" required id="gameMode" name="gameMode">
+        <option value="AroundTheWorld">Tour du monde</option>
+      </select>  
+       <label for="status">Satut :</label>
+      <select placeholder="{{game.status}}" required id="status" name="status">
+        <option value="draft">Brouillon</option>
+        <option value="started">Démarrée</option>
+        <option value="ended">Terminée</option>
+
+      </select>  
+      <br>
+      <button type="submit">Modifier</button>
+        {% endif %}
+<br>
+{% if game.status == "started" %}
+ {% for i in 0..20 %}
+            <div style="display: flex">
+            {% for j in 0..2 %}
+            <form method="POST" action="/games/{{game._id}}/shots?sector={{i}}&multiplicator={{j}}">
+                <div style="border: 2px solid black; margin : 2px; padding : 6px">
+                    <button type="submit">{{i}}</button>
+                </div>
+            </form>
+            {% endfor %}
+            </div>
+        {% endfor %}
+        <br>
+    {% endif %}
     <a href="/games">Retour</a>
+
+
 
     </body>
 </html>
