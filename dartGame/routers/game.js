@@ -48,7 +48,7 @@ router.route('/:id')
       updatedGame = {$set:{'status' : req.body.status}};
       //Si started, definir joueur courant / Ordre de passage etc
       let players = await db.db.collection('gamePlayers').find({'gameId' : req.params.id }).toArray();
-      engine.setRunningOrder(players);
+      await engine.setRunningOrder(players);
 
       await db.db.collection('games').updateOne({'_id' : ObjectId(req.params.id)}, updatedGame);
       res.redirect('/games/'+req.params.id);  
