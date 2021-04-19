@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const { ObjectId } = require('bson');
 let db = require('../../app');
 
 router.route('/')
@@ -30,12 +31,13 @@ router.route('/new')
   });
 router.route('/:id/edit')
   .get(async function (req, res, next) {
-      const id = parseInt(req.params.id);
       try {
-          let player = await db.db.collection('players').find({id}).toArray();
-          res.render('create_player.twig', {
+          let player = await db.db.collection('players').findOne({'_id': ObjectId(req.params.id)});
+          return res.format({
+            json: () => res.status(406).json('API_NOT_AVAILABLE') ,
+            html: () => res.render('create_player.twig', {
             'player': player
-          });
+          })});
         } catch (err) {
           res.status(404).send('Erreur 404 : Joueur non trouvé');
           throw err
@@ -43,23 +45,29 @@ router.route('/:id/edit')
     });
 
 router.route('/:id')
-  .get(function (req, res, next) {
-    res.redirect('/players/' + req.params.id + '/edit');
+  .get(async function (req, res, next) {
+    let player = await db.db.collection('players').findOne({'_id': ObjectId(req.params.id)});
+    return res.format({
+      json: () => res.status(200).json(player) ,
+      html: () =>res.redirect('/players/' + req.params.id + '/edit')
+    });
   })
   .post(async function (req, res, next) {
     if (req.body._method == "patch") {
-     
-        const id = parseInt(req.params.id);
+
         try {
-            if (req.body.name) {
-              let updatedPlayer = {$set:{name : req.body.name}};
-              db.db.players.updateOne({id : req.params.id}, updatedPlayer);
+            if (req.query.name) { 
+              let updatedPlayer = {$set:{name : req.query.name}};
+             await db.db.collection('players').updateOne({'_id' : ObjectId(req.params.id)}, updatedPlayer);
             }
-            if (req.body.email) {
-              let updatedPlayer = {$set:{email : req.body.email}};
-              db.db.players.updateOne({id : req.params.id}, updatedPlayer);
+            if (req.query.email) {
+              let updatedPlayer = {$set:{email : req.query.email}};
+              await db.db.collection('players').updateOne({'_id' : ObjectId(req.params.id)}, updatedPlayer);
             }
-            res.redirect('/players');
+            let player = await db.db.collection('players').findOne({'_id': ObjectId(req.params.id)});
+            return res.format({
+              json: () => res.status(200).json(player) ,
+              html: () =>res.redirect('/players')});
         }catch (err) {
             res.status(404).send('Erreur 404 : Joueur non trouvé');
             throw err;

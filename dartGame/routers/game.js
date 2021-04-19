@@ -1,13 +1,13 @@
 const router = require('express').Router()
 const { ObjectId } = require('bson');
 let db = require('../app');
+const { checkValue } = require('../engine/gamemodes/around_the_world');
 const engine = require('../engine/gamemodes/around_the_world');
 
 router.route('/')
   .get(function (req, res, next) {
     db.db.collection("games").find({}).toArray(function(err, result) {
       if (err) throw err;
-      console.log(result);
     res.render('show_games.twig', {
       'games': result
     });
@@ -32,11 +32,11 @@ router.route('/:id')
   .get(async function (req, res, next) {
     const id = req.params.id;
       try {
-        console.log("Id : ",id);
         let game = await db.db.collection('games').findOne({'_id' :  ObjectId(id)});
-        console.log(game);
+        let currentPlayer = await db.db.collection('players').findOne({'_id' : ObjectId(game.currentPlayerId) });
         res.render('show_game.twig', {
-          'game': game
+          'game': game,
+          'currentPlayer' : currentPlayer
         });
         } catch (err) {
           res.status(404).send('Erreur 404 : Partie non trouvée');
@@ -45,16 +45,22 @@ router.route('/:id')
   })
   .post(async function (req, res, next) {
     if(req.body._method == "PATCH"){
+      try{
       updatedGame = {$set:{'status' : req.body.status}};
-      //Si started, definir joueur courant / Ordre de passage etc
-      let players = await db.db.collection('gamePlayers').find({'gameId' : req.params.id }).toArray();
-      await engine.setRunningOrder(players);
-
       await db.db.collection('games').updateOne({'_id' : ObjectId(req.params.id)}, updatedGame);
-      res.redirect('/games/'+req.params.id);  
 
+      //Si started, definir joueur courant / Ordre de passage etc
+      let gamePlayers = await db.db.collection('gamePlayers').find({'gameId' : req.params.id }).toArray();
+      let player = await engine.setRunningOrder(gamePlayers);
+      
+      await db.db.collection('games').updateOne({'_id': ObjectId(req.params.id)}, {$set:{'currentPlayerId':player.playerId}});
+       
+      res.redirect('/games/'+req.params.id);  
+    }catch(err){
+      throw(err);
     }
 
+    }
   })
 
 router.post('/:id/edit', async function (req, res, next) {
@@ -84,7 +90,6 @@ router.route('/:id/players')
       let playersInGame = [] ;
       for(let gamePlayer of gamePlayers){
         let player = await db.db.collection('players').findOne({'_id' : ObjectId(gamePlayer.playerId)});
-        console.log(player);
         playersInGame.push(player);
         players.pop(player);
       }
@@ -125,29 +130,12 @@ router.route('/:id/addPlayer/:idPlayer')
       if (err) throw err;  
       console.log("1 gameShot inserted");  
       });
-    res.redirect("/games");
+      let gamePlayer = await db.db.collection('gamePlayers').findOne({'playerId' : game.currentPlayerId});
+
+      await engine.checkValue(gamePlayer,req.query.sector);
+    res.redirect("/games/"+req.params.id);
   });
 
-  router.route('/:id/play')
-  .get(async function (req, res, next) {
-    try {
-      let gamePlayers = await db.db.collection('gamePlayers').find({'gameId' : req.params.id }).toArray();
-      let playersInGame = [] ;
-      for(let gamePlayer of gamePlayers){
-        let player = await db.db.collection('players').findOne({'_id' : ObjectId(gamePlayer.playerId)});
-        playersInGame.push(player);
-      }
-
-      res.render('gameboard.twig', {
-        'players': playersInGame
-      });
-      } catch (err) {
-        
-        throw err
-    }
-     
-   
-  });
 
 class Game {
   constructor(name, mode) {
@@ -174,7 +162,7 @@ class GamePlayer {
     this.playerId = playerId;
     this.gameId = gameId
     this.remainingShots = null;
-    this.score = 0;
+    this.score = 1;
     this.rank = null;
     this.order = null;
     this.inGame = true;

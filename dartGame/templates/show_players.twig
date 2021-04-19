@@ -5,6 +5,7 @@
         <ul>
         {% for player in players %}
             <li>ID :{{player._id}} <br> Nom : {{player.name}} <br> Email : {{player.email}}</li>
+            <a href="/players/{{player._id}}/edit">Modifier</a>
         {% endfor %}
         </ul>
         <a href="/players/new">Créer un joueur</a>

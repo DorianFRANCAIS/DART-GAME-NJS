@@ -15,14 +15,7 @@
         Status : Finie
         {% endif %}
         </ul>
-        <h2>Joueurs :</h2>
-        {% if game.players %}
-        <ul>
-            {% for player in game.players %}
-                <li>{{player.name}}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
+        
 {% if game.status == "draft" %}
     <h1>Modifier une partie</h1>
     <form method='post' action="/games/{{game._id}}">
@@ -35,7 +28,7 @@
       <select placeholder="{{game.mode}}" required id="gameMode" name="gameMode">
         <option value="AroundTheWorld">Tour du monde</option>
       </select>  
-       <label for="status">Satut :</label>
+       <label for="status">Status :</label>
       <select placeholder="{{game.status}}" required id="status" name="status">
         <option value="draft">Brouillon</option>
         <option value="started">Démarrée</option>
@@ -47,7 +40,8 @@
         {% endif %}
 <br>
 {% if game.status == "started" %}
- {% for i in 0..20 %}
+<h2>Joueur : {{currentPlayer.name}}</h2>
+ {% for i in 1..20 %}
             <div style="display: flex">
             {% for j in 0..2 %}
             <form method="POST" action="/games/{{game._id}}/shots?sector={{i}}&multiplicator={{j}}">
@@ -59,6 +53,16 @@
             </div>
         {% endfor %}
         <br>
+        <form method="POST" action="/games/{{game._id}}/shots?sector={{25}}">
+                <div style="border: 2px solid black; margin : 2px; padding : 6px; width: 4vw">
+                    <button type="submit">BullEye</button>
+                </div>
+            </form>
+            <form method="POST" action="/games/{{game._id}}/shots?sector={{0}}">
+                <div style="border: 2px solid black; margin : 2px; padding : 6px; width: 4vw">
+                    <button type="submit">En dehors</button>
+                </div>
+            </form>
     {% endif %}
     <a href="/games">Retour</a>
 

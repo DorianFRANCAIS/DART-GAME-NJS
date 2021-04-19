@@ -3,7 +3,7 @@
   <body>
   {% if player %}
     <h1>Modification d'un joueur</h1>
-    <form method='post' action="/players/{{player.id}}">
+    <form method='post' action="/players/{{player._id}}">
     <input type="hidden" name="_method" value="patch" />
     <label  for="name">Nom :</label>
       <input placeholder="{{player.name}}" name="name"/>
