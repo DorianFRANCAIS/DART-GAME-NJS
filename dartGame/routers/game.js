@@ -1,183 +1,239 @@
-const router = require('express').Router()
-var id = 0;
-var db = require('../app');
+const router = require("express").Router();
+const { ObjectId } = require("bson");
+let db = require("../app");
+const { checkValue } = require("../engine/gamemodes/around_the_world");
+const engine = require("../engine/gamemodes/around_the_world");
+let date = new Date();
 
-router.route('/')
+router
+  .route("/")
   .get(function (req, res, next) {
-    res.render('show_games.twig', {
-      'games': db.db.games
-    });
+    db.db
+      .collection("games")
+      .find({})
+      .toArray(function (err, result) {
+        if (err) throw err;
+        return res.format({
+          json: () => res.status(200).json(result),
+          html: () =>
+            res.render("show_games.twig", {
+              games: result,
+            }),
+        });
+      });
   })
   .post(function (req, res, next) {
-    var game = new Game(req.body.name, req.body.gameMode);
-    db.db.games.push(game);
-    res.redirect('/games');
-    res.end();
-  });
-
-router.route('/new')
-  .get(function (req, res, next) {
-    res.render('create_game.twig', {
-      'game': null
+    let game = new Game(req.body.name, req.body.mode);
+    db.db.collection("games").insertOne(game, function (err, res) {
+      if (err) throw err;
+      console.log("1 game inserted");
     });
-  });
-router.route('/new.json')
-  .get(function (req, res, next) {
-    res.json({
-      status: 406,
-      message: 'NOT_API_AVAILABLE'
+    return res.format({
+      json: () => res.status(201).json(game),
+      html: () => res.redirect("/games"),
     });
   });
 
-router.route('/:id')
-  .get(function (req, res, next) {
-    var i = 0;
-    var trouve = false;
-    var game;
-    while (i < db.db.games.length && !trouve) {
-      if (req.params.id == db.db.games[i].id) {
-        trouve = true;
-        game = db.db.games[i];
-      }
-      i++;
-    }
-    if (!trouve) {
-      res.status(404).send('Erreur 404 : Partie non trouvée');
-    } else {
-      res.render('show_game.twig', {
-        'game': game
-      })
-    }
-  })
-  .post(function (req, res, next) {
-    var i = 0;
-    var trouve = false;
-    while (i < db.db.games.length && !trouve) {
-      if (req.params.id == db.db.games[i].id) {
-        trouve = true;
-        if (req.body.name) {
-          db.db.games[i].name = req.body.name;
-        }
-        if (req.body.gameMode) {
-          db.db.games[i].gameMode = req.body.gameMode;
-        }
-        if (req.body.status) {
-          db.db.games[i].status = req.body.status;
-          var random = Math.floor(Math.random() * Math.floor(db.db.games[i].players.length));
-          db.db.games[i].currentPlayerId = db.db.games[i].players[random];
-          res.redirect('/games/' + db.db.games[i].id + '/');
-        }
-      }
-      i++;
-    }
-    res.redirect('/games');
-
-  });
-
-router.get('/:id/edit', function (req, res, next) {
-  var i = 0;
-  var trouve = false;
-  var game;
-  while (i < db.db.games.length && !trouve) {
-    if (req.params.id == db.db.games[i].id) {
-      trouve = true;
-      game = db.db.games[i];
-    }
-    i++;
-  }
-  res.render('create_game.twig', {
-    'game': game
+router.route("/new").get(function (req, res, next) {
+  return res.format({
+    json: () => res.status(406).json("API_NOT_AVAILABLE"),
+    html: () =>
+      res.render("create_game.twig", {
+        game: null,
+      }),
   });
 });
-router.route('/:id/players')
-  .get(function (req, res, next) {
-    var availablesP = [];
-    var alreadySelectedP = [];
-    var i = 0;
-    var trouve = false;
-    var game;
-    while (i < db.db.games.length && !trouve) {
-      if (req.params.id == db.db.games[i].id) {
-        trouve = true;
-        game = db.db.games[i];
-      }
-      i++;
+
+router
+  .route("/:id")
+  .get(async function (req, res, next) {
+    const id = req.params.id;
+    try {
+      let game = await db.db.collection("games").findOne({ _id: ObjectId(id) });
+      let currentPlayer = await db.db
+        .collection("players")
+        .findOne({ _id: ObjectId(game.currentPlayerId) });
+      return res.format({
+        json: () => res.status(200).json(game),
+        html: () =>
+          res.render("show_game.twig", {
+            game: game,
+            currentPlayer: currentPlayer,
+          }),
+      });
+    } catch (err) {
+      res.status(404).send("Erreur 404 : Partie non trouvée");
+      throw err;
     }
-    for (var i = 0; i < db.db.players.length; i++) {
-      if (game.players.indexOf(db.db.players[i]) == -1) {
-        availablesP.push(db.db.players[i]);
-      } else {
-        alreadySelectedP.push(db.db.players[i]);
+  })
+  .post(async function (req, res, next) {
+    if (req.body._method == "patch") {
+      try {
+        let game = await db.db
+          .collection("games")
+          .findOne({ _id: ObjectId(req.params.id) });
+        if (game.status == "draft") {
+          updatedGame = { $set: { status: req.body.status } };
+          await db.db
+            .collection("games")
+            .updateOne({ _id: ObjectId(req.params.id) }, updatedGame);
+
+          let gamePlayers = await db.db
+            .collection("gamePlayers")
+            .find({ gameId: req.params.id })
+            .toArray();
+          let player = await engine.setRunningOrder(gamePlayers);
+
+          await db.db
+            .collection("games")
+            .updateOne(
+              { _id: ObjectId(req.params.id) },
+              { $set: { currentPlayerId: player.playerId } }
+            );
+
+          return res.format({
+            json: () => res.status(200).json(game),
+            html: () => res.redirect("/games/" + req.params.id),
+          });
+        } else {
+          return res.format({
+            json: () => res.status(410).json("GAME_NOT_EDITABLE"),
+            html: () => res.redirect("/games/" + req.params.id),
+          });
+        }
+      } catch (err) {
+        throw err;
       }
     }
-    res.render('show_players_game.twig', {
-      'availablesP': availablesP,
-      'alreadySelectedP': alreadySelectedP
-    });
   });
 
-router.route('/:id/addPlayer/:idPlayer')
-  .post(function (req, res, next) {
-    var i = 0;
-    var trouve = false;
-    var game;
-    while (i < db.db.games.length && !trouve) {
-      if (req.params.id == db.db.games[i].id) {
-        trouve = true;
-        game = db.db.games[i];
-      }
-      i++;
+router.post("/:id/edit", async function (req, res, next) {
+  try {
+    let updatedGame;
+    let game = await db.db
+      .collection("games")
+      .findOne({ _id: ObjectId(req.params.id) });
+    if (req.body.name) {
+      updatedGame = { $set: { name: req.body.name } };
+      await db.db
+        .collection("games")
+        .updateOne({ _id: ObjectId(req.params.id) }, updatedGame);
     }
-    var i = 0;
-    var trouve = false;
-    var player;
-    while (i < db.db.players.length && !trouve) {
-      if (req.params.idPlayer == db.db.players[i].id) {
-        trouve = true;
-        player = db.db.players[i];
-      }
-      i++;
+    if (req.body.mode) {
+      updatedGame = { $set: { mode: req.body.mode } };
+      await db.db
+        .collection("games")
+        .updateOne({ _id: ObjectId(req.params.id) }, updatedGame);
     }
-    var gPlayers = game.players;
-    gPlayers.push(player);
-    game.players = gPlayers;
-    res.redirect("/games/" + game.id + "/players");
-  })
+
+    return res.format({
+      json: () => res.status(406).json("API_NOT_AVAILABLE"),
+      html: () => res.redirect("/games/" + game._id),
+    });
+  } catch (err) {
+    res.status(404).send("Erreur 404 : Partie non trouvée");
+    throw err;
+  }
+});
+router.route("/:id/players").get(async function (req, res, next) {
+  try {
+    let game = await db.db
+      .collection("games")
+      .findOne({ _id: ObjectId(req.params.id) });
+    let players = await db.db.collection("players").find().toArray();
+    let gamePlayers = await db.db
+      .collection("gamePlayers")
+      .find({ gameId: req.params.id })
+      .toArray();
+    let playersInGame = [];
+    for (let gamePlayer of gamePlayers) {
+      let player = await db.db
+        .collection("players")
+        .findOne({ _id: ObjectId(gamePlayer.playerId) });
+      playersInGame.push(player);
+      players.pop(player);
+    }
+
+    return res.format({
+      json: () => res.status(200).json(playersInGame),
+      html: () =>
+        res.render("show_players_game.twig", {
+          availablesP: players,
+          alreadySelectedP: playersInGame,
+          game: game,
+        }),
+    });
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.route("/:id/addPlayer/:idPlayer").post(function (req, res, next) {
+  try {
+    let gamePlayer = new GamePlayer(req.params.idPlayer, req.params.id);
+    db.db.collection("gamePlayers").insertOne(gamePlayer, function (err, res) {
+      if (err) throw err;
+      console.log("1 player inserted");
+    });
+    return res.format({
+      json: () => res.status(204).json(),
+      html: () => res.redirect("/games/" + req.params.id + "/players"),
+    });
+  } catch (err) {
+    throw err;
+  }
+});
+
+router.route("/:id/shots").post(async function (req, res, next) {
+  let game = await db.db
+    .collection("games")
+    .findOne({ _id: ObjectId(req.params.id) });
+  let gameShot = new GameShot(game._id, game.currentPlayerId, req.query.sector);
+  db.db.collection("gameShots").insertOne(gameShot, function (err, res) {
+    if (err) throw err;
+    console.log("1 gameShot inserted");
+  });
+  let gamePlayer = await db.db
+    .collection("gamePlayers")
+    .findOne({ playerId: game.currentPlayerId });
+
+  await engine.checkValue(gamePlayer, req.query.sector);
+  return res.format({
+    json: () => res.status(204).json(),
+    html: () => res.redirect("/games/" + req.params.id),
+  });
+});
+
 class Game {
-  constructor(name, gameMode) {
-    this.id = id;
-    id++;
+  constructor(name, mode) {
     this.name = name;
-    this.gameMode = gameMode;
-    this.status = 'draft';
-    this.players = [];
-    this.createdAt = Date.now();
-  }
-  get getId() {
-    return this.id;
-  }
-  set setGameMode(gamemode) {
-    this.gameMode = gamemode;
-  }
-
-  get getGameMode() {
-    return this.gameMode;
-  }
-
-  set setPlayers(players) {
-    this.players = players;
-  }
-
-  get getPlayers() {
-    return this.players;
-  }
-
-  set setCurrentPlayerId(playerId) {
-    this.currentPlayerId = playerId;
-  }
-
-  get getCurrentPlayerId() {
-    return this.currentPlayerId;
+    this.mode = mode;
+    this.status = "draft";
+    this.currentPlayerId = null;
+    this.createdAt = date.getFullYear()+"/"+date.getMonth()+"/"+date.getDate()+'-'+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+    console.log("DATE:",this.createdAt);
   }
 }
+class GameShot {
+  constructor(gameId, playerId, sector) {
+    this.gameId = gameId;
+    this.playerId = playerId;
+    this.sector = sector;
+    this.multiplicator = null;
+    this.createdAt = date.getFullYear()+"/"+date.getMonth()+"/"+date.getDate()+'-'+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+  }
+}
+class GamePlayer {
+  constructor(playerId, gameId) {
+    this.playerId = playerId;
+    this.gameId = gameId;
+    this.remainingShots = null;
+    this.score = 1;
+    this.rank = null;
+    this.order = null;
+    this.inGame = true;
+    this.createdAt = date.getFullYear()+"/"+date.getMonth()+"/"+date.getDate()+'-'+date.getHours()+':'+date.getMinutes()+':'+date.getSeconds();
+  }
+}
+
 module.exports.router = router;

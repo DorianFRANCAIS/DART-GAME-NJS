@@ -4,16 +4,17 @@
         <h1>Joueurs disponibles :</h1>
         <ul>
         {% for player in availablesP %}
-        <li>{{player.name}} <form method="post" action="addPlayer/{{player.id}}"><button type="submit">Ajouter à la partie</button></form></li>
+        <li>{{player.name}} <form method="post" action="addPlayer/{{player._id}}"><button type="submit">Ajouter à la partie</button></form></li>
         {% endfor %}
         </ul>
         <h1>Joueurs dans la partie :</h1>
         <ul>
         {% for player in alreadySelectedP %}
         <li>{{player.name}}</li>
+        <a href="/players/{{player._id}}/edit">Modifier</a>
         {% endfor %}
         </ul>
-    <a href="/games">Retour</a>
+    <a href="/games/{{game._id}}">Retour</a>
 
     </body>
 </html>

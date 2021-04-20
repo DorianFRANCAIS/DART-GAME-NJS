@@ -3,9 +3,9 @@
   <body>
   {% if player %}
     <h1>Modification d'un joueur</h1>
-    <form method='post' action="/players/{{player.id}}">
-    <input type="hidden" name="_method" value="patch" />
-    <label  for="name">Nom :</label>
+    <form method='post' action="/players/{{player._id}}">
+      <input type="hidden" name="_method" value="patch" />
+      <label  for="name">Nom :</label>
       <input placeholder="{{player.name}}" name="name"/>
       <br>
       <label for="email">Email :</label>
@@ -15,7 +15,7 @@
   {% else %}
     <h1>Créer un joueur</h1>
     <form method='post' action="/players">
-    <label for="name">Nom :</label>
+      <label for="name">Nom :</label>
       <input required name="name"/>
       <br>
       <label for="email">Email :</label>

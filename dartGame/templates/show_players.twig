@@ -4,9 +4,11 @@
         <h1>Liste des joueurs :</h1>
         <ul>
         {% for player in players %}
-            <li>ID :{{player.id}} <br> Nom : {{player.name}} <br> Email : {{player.email}}</li>
+            <li>ID :{{player._id}} <br> Nom : {{player.name}} <br> Email : {{player.email}}</li>
+            <a href="/players/{{player._id}}/edit">Modifier</a>
         {% endfor %}
         </ul>
         <a href="/players/new">Créer un joueur</a>
+        <a href="/">Accueil</a>
     </body>
 </html>
