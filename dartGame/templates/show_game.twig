@@ -3,31 +3,28 @@
     <body>
         <h1>Fiche d'une partie : {{game.name}}</h1>
         <ul>
-        
-        {% if game.status == "draft" %}
-        Status : Brouillon
-        <br>
-        <a href="{{game._id}}/players">Joueurs</a>
-        <br>
-        {% elseif game.status == "started" %}
-        Status : Commencée
-        {% else %}
-        Status : Finie
-        {% endif %}
+         {% if game.status == "draft" %}
+           Status : Brouillon
+           <br>
+           <a href="{{game._id}}/players">Joueurs</a>
+           <br>
+         {% elseif game.status == "started" %}
+           Status : Commencée
+         {% else %}
+           Status : Finie
+         {% endif %}
         </ul>
-        
-{% if game.status == "draft" %}
-    <h1>Modifier une partie</h1>
-    <form method='post' action="/games/{{game._id}}">
-    <input type="hidden" name="_method" value="PATCH" />
-
-      <label for="name">Nom :</label>
-      <input placeholder="{{game.name}}" name="name"/>
-      <br>
-      <label for="gameMode">Mode de jeu :</label>
-      <select placeholder="{{game.mode}}" required id="gameMode" name="gameMode">
-        <option value="AroundTheWorld">Tour du monde</option>
-      </select>  
+        {% if game.status == "draft" %}
+          <h1>Modifier une partie</h1>
+          <form method='post' action="/games/{{game._id}}">
+          <input type="hidden" name="_method" value="patch" />
+          <label for="name">Nom :</label>
+          <input placeholder="{{game.name}}" name="name"/>
+          <br>
+          <label for="mode">Mode de jeu :</label>
+          <select placeholder="{{game.mode}}" required id="mode" name="mode">
+            <option value="AroundTheWorld">Tour du monde</option>
+          </select>  
        <label for="status">Status :</label>
       <select placeholder="{{game.status}}" required id="status" name="status">
         <option value="draft">Brouillon</option>
